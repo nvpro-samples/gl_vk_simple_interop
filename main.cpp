@@ -37,23 +37,23 @@
 #include <aclapi.h>
 #include <array>
 #include <chrono>
-
-#include <nvgl\contextwindow_gl.hpp>
-#include <nvpwindow.hpp>
-#include <nvvkpp/context_vkpp.hpp>
-
-
-#include <nvgl/extensions_gl.hpp>
-
-#include "compute.hpp"
-#include "nvgl/contextwindow_gl.hpp"
-#include <nvvkpp/appbase_vkpp.hpp>
-#include <nvvkpp/commands_vkpp.hpp>
+#include <iostream>
+#include <vulkan/vulkan.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <fileformats/stb_image.h>
-#include <imgui/imgui_impl_gl.h>
-#include <iostream>
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+
+#include "compute.hpp"
+#include "fileformats/stb_image.h"
+#include "imgui/imgui_impl_gl.h"
+#include "nvgl/contextwindow_gl.hpp"
+#include "nvgl/extensions_gl.hpp"
+#include "nvpsystem.hpp"
+#include "nvvkpp/appbase_vkpp.hpp"
+#include "nvvkpp/commands_vkpp.hpp"
+#include "nvvkpp/context_vkpp.hpp"
 
 int const SAMPLE_SIZE_WIDTH  = 1200;
 int const SAMPLE_SIZE_HEIGHT = 900;
@@ -145,7 +145,7 @@ public:
   //--------------------------------------------------------------------------------------------------
   //
   //
-  void onWindowRefresh() override
+  void onWindowRefresh()
   {
     glViewport(0, 0, m_size.width, m_size.height);
 
@@ -267,7 +267,7 @@ public:
     m_size.height = height;
 
     // UI
-    ImGuiH::Init(width, height, this);
+    ImGui::CreateContext();
     ImGui::InitGL();
     ImGui::GetIO().IniFilename = nullptr;  // Avoiding the INI file
   }
@@ -295,22 +295,17 @@ private:
 //
 int main(int argc, char** argv)
 {
-  // Basic OpenGL settings
-  nvgl::ContextWindowCreateInfo context(4,       //major;
-                                        5,       //minor;
-                                        false,   //core;
-                                        1,       //MSAA;
-                                        24,      //depth bits
-                                        8,       //stencil bits
-                                        false,   //debug;
-                                        false,   //robust;
-                                        false,   //forward;
-                                        false,   //stereo;
-                                        nullptr  //share;
-  );
-
   // setup some basic things for the sample, logging file for example
   NVPSystem system(argv[0], PROJECT_NAME);
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  // Create window with graphics context
+  GLFWwindow* window = glfwCreateWindow(SAMPLE_SIZE_WIDTH, SAMPLE_SIZE_HEIGHT, PROJECT_NAME, NULL, NULL);
+  if(window == nullptr)
+    return 1;
+  glfwMakeContextCurrent(window);
+  glfwSwapInterval(1);  // Enable vsync
 
   nvvkpp::ContextCreateInfo deviceInfo;
   deviceInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
@@ -328,17 +323,6 @@ int main(int argc, char** argv)
   InteropExample      example;
   nvgl::ContextWindow contextWindowGL;
 
-  // Creating the window
-  example.open(0, 0, SAMPLE_SIZE_WIDTH, SAMPLE_SIZE_HEIGHT, PROJECT_NAME);
-
-  // OpenGL context within the Window
-  if(!contextWindowGL.init(&context, example.m_internal, PROJECT_NAME))
-  {
-    return 1;
-  }
-  contextWindowGL.makeContextCurrent();
-  contextWindowGL.swapInterval(0);
-
   // Loading all OpenGL symbols
   load_GL(nvgl::ContextWindow::sysGetProcAddress);
   if(!has_GL_EXT_semaphore)
@@ -352,27 +336,40 @@ int main(int argc, char** argv)
   // Printing which GPU we are using for Vulkan
   LOGI("using %s", vkctx.m_physicalDevice.getProperties().deviceName);
 
-  //// Initialize the window, UI ..
+  // Initialize the window, UI ..
   example.initUI(SAMPLE_SIZE_WIDTH, SAMPLE_SIZE_HEIGHT);
 
-  //// Prepare the example
+  // Prepare the example
   example.prepare(vkctx.m_queueGCT.familyIndex);
 
 
-  // Window system loop
-  while(example.pollEvents())
+  // GLFW Callback
+  example.setupGlfwCallbacks(window);
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+
+  // Main loop
+  while(!glfwWindowShouldClose(window))
   {
-    if(example.isOpen())
-    {
-      glClearColor(0.5f, 0.0f, 0.0f, 0.0f);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glfwPollEvents();
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    if(w == 0 || h == 0)
+      continue;
 
-      example.animate();
-      example.onWindowRefresh();
+    glClearColor(0.5f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      contextWindowGL.swapBuffers();
-    }
+    example.animate();
+    example.onWindowRefresh();
+
+    //    contextWindowGL.swapBuffers();
+    glfwSwapBuffers(window);
   }
   example.destroy();
   vkctx.deinit();
+
+  glfwDestroyWindow(window);
+  glfwTerminate();
+
+  return 0;
 }
