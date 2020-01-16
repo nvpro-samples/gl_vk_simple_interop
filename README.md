@@ -106,10 +106,10 @@ But since we want to flag this to memroy be exported, we have overriden the func
 Having this done, we will have an exportable handle type for a device memory object.
 
 
-!!! note
+**!!! note**
     This must be done for all memory objects that need to be visible for both Vulkan and OpenGL.
 
-!!! warn Best Memory Usage Practice
+**!!! warn Best Memory Usage Practice**
     We have used a very simplistic approach, for better usage of memory, see this [blog](https://developer.nvidia.com/vulkan-memory-management).
 
 
@@ -122,7 +122,7 @@ See file: `gl_vkpp.hpp`
 
 Note: the Vulkan buffer structure was extended to hold the OpenGL information
 
-~~~C++
+~~~~C++
 // #VKGL Extra for Interop
 struct BufferVkGL : public Buffer
 {
@@ -130,14 +130,14 @@ struct BufferVkGL : public Buffer
   GLuint memoryObject = 0;        // OpenGL memory object
   GLuint oglId        = 0;        // OpenGL object ID
 };
-~~~
+~~~~
 
 
 ~~~~ C++
   // #VKGL:  Get the share Win32 handle between Vulkan and OpenGL
   bufGl.handle = device.getMemoryWin32HandleKHR(
 					{bufGl.bufVk.allocation, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32});
-~~~~~
+~~~~
 
 With the `HANDLE` we can retrieve the equivalent OpenGL memory object.
 
@@ -146,7 +146,7 @@ With the `HANDLE` we can retrieve the equivalent OpenGL memory object.
   glCreateMemoryObjectsEXT(1, &bufGl.memoryObject);
   auto req     = device.getBufferMemoryRequirements(bufGl.bufVk.buffer);
   glImportMemoryWin32HandleEXT(bufGl.memoryObject, req.size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, bufGl.handle);
-~~~~~~
+~~~~
 
 
 
@@ -158,7 +158,7 @@ To use the retrieved OpenGL memory object, you must create the buffer then _link
 In Vulkan we bind memory to our resources, in OpenGL we can create new resources from a range within imported memory, 
 or we can attach existing resources to use that memory via [NV_memory_attachment](https://www.khronos.org/registry/OpenGL/extensions/NV/NV_memory_attachment.txt).
 
-~~~~~C++
+~~~~C++
   glCreateBuffers(1, &bufGl.oglId);
   glNamedBufferStorageMemEXT(bufGl.oglId, req.size, bufGl.memoryObject, 0);
 ~~~~
@@ -209,17 +209,15 @@ Vulkan and waiting for its signal before displaying the image.
 
 
 
-
-******************************************************************
-*                                                                *
-*  +------------+                             +------------+     *
-*  | GL Context | signal               wait   | GL Context |     *
-*  +------------+     |                  ^    +------------+     *
-*                     v  +-----------+   |                       *
-*                   wait |Vk Context | signal                    *
-*                        +-----------+                           *
-******************************************************************
-
+~~~~ batch
+                                                           
+  +------------+                             +------------+
+  | GL Context | signal               wait   | GL Context |
+  +------------+     |                  ^    +------------+
+                     v  +-----------+   |                  
+                   wait |Vk Context | signal               
+                        +-----------+                      
+~~~~
 
 Those semaphores are created in Vulkan, and as previously, the OpenGL 
 version will be retrieved.
@@ -246,7 +244,7 @@ vk::SemaphoreCreateInfo       sci;
 sci.pNext = &esci;
 m_semaphores.vkReady = m_device.createSemaphore (sci);
 m_semaphores.vkComplete = m_device.createSemaphore (sci);
-~~~ 
+~~~~ 
 
 The convertion to OpenGL will be done the following way:
 ~~~~C++
@@ -261,8 +259,7 @@ glImportSemaphoreWin32HandleEXT (m_semaphores.glReady,
                                  GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, hglReady);
 glImportSemaphoreWin32HandleEXT (m_semaphores.glComplete, 
                                  GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, hglComplete);
-~~~
-
+~~~~
 
 
 
@@ -277,11 +274,12 @@ the flags:
 
 We can easily update the buffer doing the following:
 
-~~~C++
+~~~~C++
 g_vertexDataVK[0].pos.x = sin(t);
 g_vertexDataVK[1].pos.y = cos(t);
 g_vertexDataVK[2].pos.x = -sin(t);
 memcpy(m_vkBuffer.mapped, g_vertexDataVK.data(), g_vertexDataVK.size() * sizeof(Vertex));
-~~~~ 
+~~~~
+ 
 Note we use a host-visible buffer for the sake of simplicity, at the expense of efficiency. For best performance the geometry
 would need to be uploaded to device-local memory through a staging buffer.
