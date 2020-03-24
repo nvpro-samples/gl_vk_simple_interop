@@ -112,24 +112,38 @@ public:
 
   void createSemaphores()
   {
-    // Semaphore
+    glGenSemaphoresEXT(1, &m_semaphores.glReady);
+    glGenSemaphoresEXT(1, &m_semaphores.glComplete);
+
+    // Create semaphores
+#ifdef WIN32
     auto handleType = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+#else
+    const auto handleType = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+#endif
 
     vk::ExportSemaphoreCreateInfo esci{handleType};
     vk::SemaphoreCreateInfo       sci;
     sci.pNext               = &esci;
     m_semaphores.vkReady    = m_device.createSemaphore(sci);
     m_semaphores.vkComplete = m_device.createSemaphore(sci);
-    // OpenGL
+
+    // Import semaphores
+#ifdef WIN32
     {
-      // Import semaphores
       HANDLE hglReady    = m_device.getSemaphoreWin32HandleKHR({m_semaphores.vkReady, handleType});
       HANDLE hglComplete = m_device.getSemaphoreWin32HandleKHR({m_semaphores.vkComplete, handleType});
-      glGenSemaphoresEXT(1, &m_semaphores.glReady);
-      glGenSemaphoresEXT(1, &m_semaphores.glComplete);
       glImportSemaphoreWin32HandleEXT(m_semaphores.glReady, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, hglReady);
       glImportSemaphoreWin32HandleEXT(m_semaphores.glComplete, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, hglComplete);
     }
+#else
+    {
+      auto fdReady    = m_device.getSemaphoreFdKHR({m_semaphores.vkReady, handleType});
+      auto fdComplete = m_device.getSemaphoreFdKHR({m_semaphores.vkComplete, handleType});
+      glImportSemaphoreFdEXT(m_semaphores.glReady, GL_HANDLE_TYPE_OPAQUE_FD_EXT, fdReady);
+      glImportSemaphoreFdEXT(m_semaphores.glComplete, GL_HANDLE_TYPE_OPAQUE_FD_EXT, fdComplete);
+    }
+#endif
   }
 
   void prepareDescriptors()

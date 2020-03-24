@@ -30,9 +30,13 @@
 #include <vulkan/vulkan.hpp>
 
 #include "nvvkpp/allocator_dedicated_vkpp.hpp"
-#include <handleapi.h>
 #include <nvgl/extensions_gl.hpp>
 
+#ifdef WIN32
+#include <handleapi.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace nvvkpp {
 
@@ -41,14 +45,26 @@ struct BufferVkGL
 {
   nvvkpp::BufferDedicated bufVk;  // The allocated buffer
 
-  HANDLE handle       = nullptr;  // The Win32 handle
+#ifdef WIN32
+  HANDLE handle = nullptr;  // The Win32 handle
+#else
+  int fd = -1;
+#endif
   GLuint memoryObject = 0;        // OpenGL memory object
   GLuint oglId        = 0;        // OpenGL object ID
 
   void destroy(nvvkpp::AllocatorDedicated& alloc)
   {
     alloc.destroy(bufVk);
+#ifdef WIN32
     CloseHandle(handle);
+#else
+    if(fd != -1)
+    {
+      close(fd);
+      fd = -1;
+    }
+#endif
     glDeleteBuffers(1, &oglId);
     glDeleteMemoryObjectsEXT(1, &memoryObject);
   }
@@ -61,17 +77,27 @@ struct Texture2DVkGL
 
   uint32_t     mipLevels{1};
   vk::Extent2D imgSize{0, 0};
-
+#ifdef WIN32
   HANDLE handle{nullptr};  // The Win32 handle
+#else
+  int fd{-1};
+#endif
   GLuint memoryObject{0};  // OpenGL memory object
   GLuint oglId{0};         // OpenGL object ID
-
 
   void destroy(nvvkpp::AllocatorDedicated& alloc)
   {
     alloc.destroy(texVk);
 
+#ifdef WIN32
     CloseHandle(handle);
+#else
+    if(fd != -1)
+    {
+      close(fd);
+      fd = -1;
+    }
+#endif
     glDeleteBuffers(1, &oglId);
     glDeleteMemoryObjectsEXT(1, &memoryObject);
   }
@@ -81,25 +107,44 @@ struct Texture2DVkGL
 inline void createBufferGL(const vk::Device& device, BufferVkGL& bufGl)
 {
 
+#ifdef WIN32
   bufGl.handle = device.getMemoryWin32HandleKHR({bufGl.bufVk.allocation, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32});
+#else
+  bufGl.fd = device.getMemoryFdKHR({bufGl.bufVk.allocation, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd});
+#endif
   auto req = device.getBufferMemoryRequirements(bufGl.bufVk.buffer);
-
 
   glCreateBuffers(1, &bufGl.oglId);
   glCreateMemoryObjectsEXT(1, &bufGl.memoryObject);
+#ifdef WIN32
   glImportMemoryWin32HandleEXT(bufGl.memoryObject, req.size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, bufGl.handle);
+#else
+  glImportMemoryFdEXT(bufGl.memoryObject, req.size, GL_HANDLE_TYPE_OPAQUE_FD_EXT, bufGl.fd);
+  // fd got consumed
+  bufGl.fd = -1;
+#endif
   glNamedBufferStorageMemEXT(bufGl.oglId, req.size, bufGl.memoryObject, 0);
 }
 
 // Get the Vulkan texture and create the OpenGL equivalent using the memory allocated in Vulkan
 inline void createTextureGL(const vk::Device& device, Texture2DVkGL& texGl, int format, int minFilter, int magFilter, int wrap)
 {
+#ifdef WIN32
   texGl.handle = device.getMemoryWin32HandleKHR({texGl.texVk.allocation, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32});
+#else
+  texGl.fd = device.getMemoryFdKHR({texGl.texVk.allocation, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd});
+#endif
   auto req = device.getImageMemoryRequirements(texGl.texVk.image);
 
   // Create a 'memory object' in OpenGL, and associate it with the memory allocated in Vulkan
   glCreateMemoryObjectsEXT(1, &texGl.memoryObject);
+#ifdef WIN32
   glImportMemoryWin32HandleEXT(texGl.memoryObject, req.size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, texGl.handle);
+#else
+  glImportMemoryFdEXT(texGl.memoryObject, req.size, GL_HANDLE_TYPE_OPAQUE_FD_EXT, texGl.fd);
+  // fd got consumed
+  texGl.fd = -1;
+#endif
   glCreateTextures(GL_TEXTURE_2D, 1, &texGl.oglId);
   glTextureStorageMem2DEXT(texGl.oglId, texGl.mipLevels, format, texGl.imgSize.width, texGl.imgSize.height, texGl.memoryObject, 0);
   glTextureParameteri(texGl.oglId, GL_TEXTURE_MIN_FILTER, minFilter);
