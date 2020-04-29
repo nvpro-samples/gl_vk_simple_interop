@@ -29,7 +29,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "nvvkpp/allocator_dedicated_vkpp.hpp"
+#include "nvvk/allocator_dedicated_vk.hpp"
 #include <nvgl/extensions_gl.hpp>
 
 #ifdef WIN32
@@ -43,17 +43,17 @@ namespace nvvkpp {
 // #VKGL Extra for Interop
 struct BufferVkGL
 {
-  nvvkpp::BufferDedicated bufVk;  // The allocated buffer
+  nvvk::BufferDedicated bufVk;  // The allocated buffer
 
 #ifdef WIN32
   HANDLE handle = nullptr;  // The Win32 handle
 #else
   int fd = -1;
 #endif
-  GLuint memoryObject = 0;        // OpenGL memory object
-  GLuint oglId        = 0;        // OpenGL object ID
+  GLuint memoryObject = 0;  // OpenGL memory object
+  GLuint oglId        = 0;  // OpenGL object ID
 
-  void destroy(nvvkpp::AllocatorDedicated& alloc)
+  void destroy(nvvk::AllocatorDedicated& alloc)
   {
     alloc.destroy(bufVk);
 #ifdef WIN32
@@ -73,7 +73,7 @@ struct BufferVkGL
 // #VKGL Extra for Interop
 struct Texture2DVkGL
 {
-  nvvkpp::TextureDedicated texVk;
+  nvvk::TextureDedicated texVk;
 
   uint32_t     mipLevels{1};
   vk::Extent2D imgSize{0, 0};
@@ -85,7 +85,7 @@ struct Texture2DVkGL
   GLuint memoryObject{0};  // OpenGL memory object
   GLuint oglId{0};         // OpenGL object ID
 
-  void destroy(nvvkpp::AllocatorDedicated& alloc)
+  void destroy(nvvk::AllocatorDedicated& alloc)
   {
     alloc.destroy(texVk);
 

@@ -30,9 +30,9 @@
 
 #include "gl_vkpp.hpp"
 #include "nvh/fileoperations.hpp"
-#include <nvvkpp/commands_vkpp.hpp>
-#include <nvvkpp/images_vkpp.hpp>
-#include <nvvkpp/utilities_vkpp.hpp>
+#include "nvvk/commands_vk.hpp"
+#include "nvvk/images_vk.hpp"
+#include "nvvk/shaders_vk.hpp"
 
 extern std::vector<std::string> defaultSearchPaths;
 
@@ -67,7 +67,7 @@ public:
   uint32_t                m_queueIdxCompute;
   vk::PhysicalDevice      m_physicalDevice;
 
-  nvvkpp::AllocatorVkExport m_alloc;
+  nvvk::AllocatorVkExport m_alloc;
 
   struct Semaphores
   {
@@ -194,8 +194,8 @@ public:
     std::vector<std::string> paths = defaultSearchPaths;
     auto                     code  = nvh::loadFile("shaders/shader.comp.spv", true, paths);
 
-    computePipelineCreateInfo.stage = nvvkpp::util::loadShader(m_device, code, vk::ShaderStageFlagBits::eCompute);
-    m_pipeline = m_device.createComputePipelines(m_pipelineCache, computePipelineCreateInfo, nullptr)[0];
+    computePipelineCreateInfo.stage = nvvk::createShaderStageInfo(m_device, code, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_pipeline = m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr);
     m_device.destroyShaderModule(computePipelineCreateInfo.stage.module);
 
     m_commandBuffer = m_device.allocateCommandBuffers({m_commandPool, vk::CommandBufferLevel::ePrimary, 1})[0];
@@ -237,25 +237,18 @@ public:
     imageCreateInfo.usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage;
 
     nvvkpp::Texture2DVkGL texture;
-    texture.texVk   = m_alloc.createImage(imageCreateInfo);
+
+    nvvk::ImageDedicated    image  = m_alloc.createImage(imageCreateInfo);
+    vk::ImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageCreateInfo);
+
+    // Create the texture from the image and adding a default sampler
+    texture.texVk   = m_alloc.createTexture(image, ivInfo, vk::SamplerCreateInfo());
     texture.imgSize = vk::Extent2D(extent.width, extent.height);
 
-    // Create sampler (not really needed)
-    vk::SamplerCreateInfo sampler;
-    texture.texVk.descriptor.sampler = m_device.createSampler({});
-
-    // Create image view
-    vk::ImageViewCreateInfo view;
-    view.viewType                        = vk::ImageViewType::e2D;
-    view.format                          = format;
-    view.subresourceRange                = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-    view.image                           = texture.texVk.image;
-    texture.texVk.descriptor.imageView   = m_device.createImageView(view);
-    texture.texVk.descriptor.imageLayout = targetLayout;
-
     {
-      nvvkpp::ScopeCommandBuffer cmdBuf(m_device, m_queueIdxGraphic);
-      nvvkpp::image::setImageLayout(cmdBuf, texture.texVk.image, vk::ImageLayout::eUndefined, targetLayout);
+      // Converting the image to the desired layout
+      nvvk::ScopeCommandBuffer cmdBuf(m_device, m_queueIdxGraphic);
+      nvvk::cmdBarrierImageLayout(cmdBuf, texture.texVk.image, vk::ImageLayout::eUndefined, targetLayout);
     }
 
 

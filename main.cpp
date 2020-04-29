@@ -54,9 +54,11 @@
 #include "nvgl/contextwindow_gl.hpp"
 #include "nvgl/extensions_gl.hpp"
 #include "nvpsystem.hpp"
-#include "nvvkpp/appbase_vkpp.hpp"
-#include "nvvkpp/commands_vkpp.hpp"
-#include "nvvkpp/context_vkpp.hpp"
+#include "nvvk/appbase_vkpp.hpp"
+#include "nvvk/commands_vk.hpp"
+#include "nvvk/context_vk.hpp"
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 int const SAMPLE_SIZE_WIDTH  = 1200;
 int const SAMPLE_SIZE_HEIGHT = 900;
@@ -95,7 +97,7 @@ static std::vector<Vertex> g_vertexDataVK = {{{-1.0f, -1.0f, 0.0f}, {0, 0}},
 //--------------------------------------------------------------------------------------------------
 //
 //
-class InteropExample : public nvvkpp::AppBase
+class InteropExample : public nvvk::AppBase
 {
 public:
   void prepare(uint32_t queueIdxCompute)
@@ -284,8 +286,8 @@ public:
 
 
 private:
-  nvvkpp::BufferVkGL        m_bufferVk;
-  nvvkpp::AllocatorVkExport m_alloc;
+  nvvkpp::BufferVkGL      m_bufferVk;
+  nvvk::AllocatorVkExport m_alloc;
 
   GLuint m_vertexArray = 0;  // VAO
   GLuint m_programID   = 0;  // Shader program
@@ -310,7 +312,7 @@ int main(int argc, char** argv)
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);  // Enable vsync
 
-  nvvkpp::ContextCreateInfo deviceInfo;
+  nvvk::ContextCreateInfo deviceInfo;
   deviceInfo.addInstanceExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
   deviceInfo.addInstanceExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
   deviceInfo.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
@@ -324,7 +326,7 @@ int main(int argc, char** argv)
 #endif
 
   // Creating the Vulkan instance and device
-  nvvkpp::Context vkctx;
+  nvvk::Context vkctx;
   vkctx.init(deviceInfo);
 
 
@@ -339,10 +341,10 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  example.setup(vkctx.m_device, vkctx.m_physicalDevice, vkctx.m_queueGCT.familyIndex);
+  example.setup(vkctx.m_instance, vkctx.m_device, vkctx.m_physicalDevice, vkctx.m_queueGCT.familyIndex);
 
   // Printing which GPU we are using for Vulkan
-  LOGI("using %s", vkctx.m_physicalDevice.getProperties().deviceName);
+  LOGI("using %s", example.getPhysicalDevice().getProperties().deviceName);
 
   // Initialize the window, UI ..
   example.initUI(SAMPLE_SIZE_WIDTH, SAMPLE_SIZE_HEIGHT);
@@ -353,7 +355,7 @@ int main(int argc, char** argv)
 
   // GLFW Callback
   example.setupGlfwCallbacks(window);
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplGlfw_InitForOpenGL(window, false);
 
   // Main loop
   while(!glfwWindowShouldClose(window))
