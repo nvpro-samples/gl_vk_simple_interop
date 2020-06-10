@@ -195,7 +195,7 @@ public:
     auto                     code  = nvh::loadFile("shaders/shader.comp.spv", true, paths);
 
     computePipelineCreateInfo.stage = nvvk::createShaderStageInfo(m_device, code, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_pipeline = m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr);
+    m_pipeline = m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr).value;
     m_device.destroyShaderModule(computePipelineCreateInfo.stage.module);
 
     m_commandBuffer = m_device.allocateCommandBuffers({m_commandPool, vk::CommandBufferLevel::ePrimary, 1})[0];
