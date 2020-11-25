@@ -278,7 +278,7 @@ public:
   }
 
   //- Override the default resize
-  void onWindowResize(int w, int h) override
+  void onFramebufferSize(int w, int h) override
   {
     m_size.width  = w;
     m_size.height = h;
