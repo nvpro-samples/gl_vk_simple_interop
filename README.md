@@ -1,4 +1,4 @@
-﻿# OpenGL Interop
+# OpenGL Interop
 
 
 By [Martin-Karl Lefrançois](https://devblogs.nvidia.com/author/mlefrancois/)

@@ -46,11 +46,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_gl.h"
+#include "imgui/backends/imgui_impl_glfw.h"
 
 #include "compute.hpp"
 #include "fileformats/stb_image.h"
-#include "imgui/imgui_impl_gl.h"
 #include "nvgl/contextwindow_gl.hpp"
 #include "nvgl/extensions_gl.hpp"
 #include "nvpsystem.hpp"
@@ -69,7 +69,7 @@ std::vector<std::string> defaultSearchPaths{
     "../",
     std::string(PROJECT_NAME),
     std::string("SPV_" PROJECT_NAME),
-    PROJECT_ABSDIRECTORY,
+    NVPSystem::exePath() + PROJECT_RELDIRECTORY,
     NVPSystem::exePath() + std::string(PROJECT_RELDIRECTORY),
 };
 
@@ -301,7 +301,7 @@ private:
 int main(int argc, char** argv)
 {
   // setup some basic things for the sample, logging file for example
-  NVPSystem system(argv[0], PROJECT_NAME);
+  NVPSystem system(PROJECT_NAME);
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);

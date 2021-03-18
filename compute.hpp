@@ -191,11 +191,11 @@ public:
     m_pipelineLayout                   = m_device.createPipelineLayout(layout_info);
     vk::ComputePipelineCreateInfo computePipelineCreateInfo{{}, {}, m_pipelineLayout};
 
-    std::vector<std::string> paths = defaultSearchPaths;
-    auto                     code  = nvh::loadFile("shaders/shader.comp.spv", true, paths);
+    auto code = nvh::loadFile("shaders/shader.comp.spv", true, defaultSearchPaths);
 
     computePipelineCreateInfo.stage = nvvk::createShaderStageInfo(m_device, code, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_pipeline = static_cast<const vk::Pipeline&>(m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr));
+    m_pipeline =
+        static_cast<const vk::Pipeline&>(m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr));
     m_device.destroyShaderModule(computePipelineCreateInfo.stage.module);
 
     m_commandBuffer = m_device.allocateCommandBuffers({m_commandPool, vk::CommandBufferLevel::ePrimary, 1})[0];
