@@ -83,7 +83,7 @@ When allocating a Vulkan buffer, it is required to use the [ExportMemoryAllocati
 In this example, we are using a simple Vulkan memory allocator. This allocator is doing decitated allocation, one memroy allocation per buffer. This is not the recommended way, it would be better to allocate larger memory block and bind buffers to some memroy sections, but it is fine for the purpose of this example.
 
 Form this dedicated vulkan memory allocator(`AllocatorDedicated`), we have derived it (`AllocatorVkExport`) to export all memory allocation.
-See (`nvpro-samples\shared_sources\nvvkpp\allocator_dedicated_vkpp.hpp`)
+See (`nvpro-samples\nvpro_core\nvvkpp\allocator_dedicated_vkpp.hpp`)
 
 Normally, the memory allocation is done like this:
 ~~~~C++

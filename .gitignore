@@ -1,1 +1,2 @@
 shaders/*.spv
+build/*
