@@ -337,7 +337,7 @@ int main(int argc, char** argv)
   example.setup(vkctx.m_instance, vkctx.m_device, vkctx.m_physicalDevice, vkctx.m_queueGCT.familyIndex);
 
   // Printing which GPU we are using for Vulkan
-  LOGI("using %s", example.getPhysicalDevice().getProperties().deviceName);
+  LOGI("using %s", example.getPhysicalDevice().getProperties().deviceName.data());
 
   // Initialize the window, UI ..
   example.initUI(SAMPLE_SIZE_WIDTH, SAMPLE_SIZE_HEIGHT);
