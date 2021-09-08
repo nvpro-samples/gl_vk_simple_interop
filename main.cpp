@@ -18,7 +18,6 @@
  */
 
 
-
 //--------------------------------------------------------------------------------------------------
 // Very simple Vulkan-OpenGL example:
 // - The vertex buffer is allocated with Vulkan, but used by OpenGL to render
@@ -77,8 +76,8 @@ inline double getSysTime()
 // An array of 3 vectors which represents 3 vertices
 struct Vertex
 {
-  nvmath::vec3 pos;
-  nvmath::vec2 uv;
+  nvmath::vec3f pos;
+  nvmath::vec2f uv;
 };
 
 // The triangle
