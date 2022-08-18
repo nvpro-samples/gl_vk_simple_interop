@@ -80,7 +80,7 @@ Here are the extra functions we are using:
 
 When allocating a Vulkan buffer, it is required to use the [ExportMemoryAllocation](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VK_KHR_external_memory.html) extension.
 
-In this example, we are using a simple Vulkan memory allocator. This allocator is doing decitated allocation, one memroy allocation per buffer. This is not the recommended way, it would be better to allocate larger memory block and bind buffers to some memroy sections, but it is fine for the purpose of this example.
+In this example, we are using a simple Vulkan memory allocator. This allocator is doing decitated allocation, one memory allocation per buffer. This is not the recommended way, it would be better to allocate larger memory block and bind buffers to some memory sections, but it is fine for the purpose of this example.
 
 Form this dedicated vulkan memory allocator(`AllocatorDedicated`), we have derived it (`AllocatorVkExport`) to export all memory allocation.
 See (`nvpro-samples\nvpro_core\nvvkpp\allocator_dedicated_vkpp.hpp`)
@@ -93,7 +93,7 @@ Normally, the memory allocation is done like this:
   }
 ~~~~
 
-But since we want to flag this to memroy be exported, we have overriden the function and setting to the pNext, the required information.
+But since we want to flag this to memory be exported, we have overriden the function and setting to the pNext, the required information.
 ~~~C++
   vk::DeviceMemory AllocateMemory(vk::MemoryAllocateInfo& allocateInfo) override
   {
