@@ -45,7 +45,7 @@
 #include "nvgl/contextwindow_gl.hpp"
 #include "nvgl/extensions_gl.hpp"
 #include "nvpsystem.hpp"
-#include "nvvk/appbase_vkpp.hpp"
+#include "nvvkhl/appbase_vkpp.hpp"
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/context_vk.hpp"
 #include "stb_image.h"
@@ -89,7 +89,7 @@ static std::vector<Vertex> g_vertexDataVK = {{{-1.0f, -1.0f, 0.0f}, {0, 0}},
 //--------------------------------------------------------------------------------------------------
 //
 //
-class InteropExample : public nvvk::AppBase
+class InteropExample : public nvvkhl::AppBase
 {
 public:
   void prepare(uint32_t queueIdxCompute)
