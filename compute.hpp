@@ -26,6 +26,7 @@
 #include "nvvk/commands_vk.hpp"
 #include "nvvk/images_vk.hpp"
 #include "nvvk/shaders_vk.hpp"
+#include "nvvk/vulkanhppsupport.hpp"
 
 extern std::vector<std::string> defaultSearchPaths;
 
@@ -240,8 +241,8 @@ public:
 
     {
       // Converting the image to the desired layout
-      nvvk::ScopeCommandBuffer cmdBuf(m_device, m_queueIdxGraphic);
-      nvvk::cmdBarrierImageLayout(cmdBuf, texture.texVk.image, vk::ImageLayout::eUndefined, targetLayout);
+      nvvkpp::ScopeCommandBuffer cmdBuf(m_device, m_queueIdxGraphic);
+      nvvkpp::cmdBarrierImageLayout(cmdBuf, texture.texVk.image, vk::ImageLayout::eUndefined, targetLayout);
     }
 
 

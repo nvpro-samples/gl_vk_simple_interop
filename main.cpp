@@ -279,7 +279,7 @@ public:
 
 private:
   nvvkpp::BufferVkGL                     m_bufferVk;
-  nvvk::ExportResourceAllocatorDedicated m_alloc;
+  nvvkpp::ExportResourceAllocatorDedicated m_alloc;
 
   GLuint m_vertexArray = 0;  // VAO
   GLuint m_programID   = 0;  // Shader program
