@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION
  * SPDX-License-Identifier: Apache-2.0
  */
- 
+
 #version 450
 
 
@@ -40,9 +40,9 @@ void main()
   vec2  fragCoord   = vec2(gl_GlobalInvocationID);
   vec4  fragColor   = vec4(0);
 
-  
+
   // Center
-  vec2 uv  = fragCoord / vec2(iResolution.xy);
+  vec2 uv = fragCoord / vec2(iResolution.xy);
   uv -= center;
   uv *= 5.0;
 

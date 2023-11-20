@@ -99,8 +99,8 @@ struct Texture2DVkGL
 // Get the Vulkan buffer and create the OpenGL equivalent using the memory allocated in Vulkan
 inline void createBufferGL(nvvk::ResourceAllocator& alloc, BufferVkGL& bufGl)
 {
-  vk::Device device = alloc.getDevice();
-  nvvk::MemAllocator::MemInfo info = alloc.getMemoryAllocator()->getMemoryInfo(bufGl.bufVk.memHandle);
+  vk::Device                  device = alloc.getDevice();
+  nvvk::MemAllocator::MemInfo info   = alloc.getMemoryAllocator()->getMemoryInfo(bufGl.bufVk.memHandle);
 #ifdef WIN32
   bufGl.handle = device.getMemoryWin32HandleKHR({info.memory, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32});
 #else
@@ -142,7 +142,8 @@ inline void createTextureGL(nvvk::ResourceAllocator& alloc, Texture2DVkGL& texGl
   texGl.fd = -1;
 #endif
   glCreateTextures(GL_TEXTURE_2D, 1, &texGl.oglId);
-  glTextureStorageMem2DEXT(texGl.oglId, texGl.mipLevels, format, texGl.imgSize.width, texGl.imgSize.height, texGl.memoryObject, info.offset);
+  glTextureStorageMem2DEXT(texGl.oglId, texGl.mipLevels, format, texGl.imgSize.width, texGl.imgSize.height,
+                           texGl.memoryObject, info.offset);
   glTextureParameteri(texGl.oglId, GL_TEXTURE_MIN_FILTER, minFilter);
   glTextureParameteri(texGl.oglId, GL_TEXTURE_MAG_FILTER, magFilter);
   glTextureParameteri(texGl.oglId, GL_TEXTURE_WRAP_S, wrap);

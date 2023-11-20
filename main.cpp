@@ -77,8 +77,8 @@ inline double getSysTime()
 // An array of 3 vectors which represents 3 vertices
 struct Vertex
 {
-  nvmath::vec3f pos;
-  nvmath::vec2f uv;
+  glm::vec3 pos;
+  glm::vec2 uv;
 };
 
 // The triangle
@@ -279,7 +279,7 @@ public:
 
 
 private:
-  nvvkpp::BufferVkGL                     m_bufferVk;
+  nvvkpp::BufferVkGL                       m_bufferVk;
   nvvkpp::ExportResourceAllocatorDedicated m_alloc;
 
   GLuint m_vertexArray = 0;  // VAO
@@ -368,11 +368,12 @@ int main(int argc, char** argv)
     //    contextWindowGL.swapBuffers();
     glfwSwapBuffers(window);
   }
-  example.destroy();
-  vkctx.deinit();
 
   glfwDestroyWindow(window);
   glfwTerminate();
+
+  example.destroy();
+  vkctx.deinit();
 
   return 0;
 }

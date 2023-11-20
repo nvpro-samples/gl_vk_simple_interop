@@ -18,7 +18,6 @@
  */
 
 
-
 #pragma once
 
 #include "gl_vkpp.hpp"
@@ -42,6 +41,9 @@ public:
     m_queueIdxGraphic = queueIdxGraphic;
     m_queueIdxCompute = queueIdxCompute;
     m_pipelineCache   = device.createPipelineCache(vk::PipelineCacheCreateInfo());
+    vk::FenceCreateInfo finfo{};
+    finfo.flags = vk::FenceCreateFlagBits::eSignaled;
+    m_fence     = m_device.createFence(finfo);
 
     m_alloc.init(device, physicalDevice);
   }
@@ -60,6 +62,7 @@ public:
   uint32_t                m_queueIdxGraphic;
   uint32_t                m_queueIdxCompute;
   vk::PhysicalDevice      m_physicalDevice;
+  vk::Fence               m_fence;
 
   nvvk::ExportResourceAllocatorDedicated m_alloc;
 
@@ -81,6 +84,7 @@ public:
     m_device.destroySemaphore(m_semaphores.vkReady);
     m_device.destroySemaphore(m_semaphores.vkComplete);
     m_device.destroyPipelineCache(m_pipelineCache);
+    m_device.destroyFence(m_fence);
 
     // Clean up used Vulkan resources
     m_device.destroyPipelineLayout(m_pipelineLayout);
@@ -188,8 +192,7 @@ public:
     auto code = nvh::loadFile("shaders/shader.comp.spv", true, defaultSearchPaths);
 
     computePipelineCreateInfo.stage = nvvk::createShaderStageInfo(m_device, code, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_pipeline =
-        m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr).value;
+    m_pipeline = m_device.createComputePipeline(m_pipelineCache, computePipelineCreateInfo, nullptr).value;
     m_device.destroyShaderModule(computePipelineCreateInfo.stage.module);
 
     m_commandBuffer = m_device.allocateCommandBuffers({m_commandPool, vk::CommandBufferLevel::ePrimary, 1})[0];
@@ -201,6 +204,9 @@ public:
     static auto tStart = std::chrono::high_resolution_clock::now();
     auto        tEnd   = std::chrono::high_resolution_clock::now();
     auto        tDiff  = std::chrono::duration<float, std::milli>(tEnd - tStart).count() / 1000.f;
+
+    vk::Result result = m_device.waitForFences({m_fence}, true, 10);
+    m_device.resetFences(m_fence);
 
     m_commandBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
     m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_pipeline);
@@ -232,7 +238,7 @@ public:
 
     nvvkpp::Texture2DVkGL texture;
 
-    nvvk::Image    image  = m_alloc.createImage(imageCreateInfo);
+    nvvk::Image             image  = m_alloc.createImage(imageCreateInfo);
     vk::ImageViewCreateInfo ivInfo = nvvk::makeImageViewCreateInfo(image.image, imageCreateInfo);
 
     // Create the texture from the image and adding a default sampler
@@ -261,6 +267,7 @@ public:
     computeSubmitInfo.pWaitDstStageMask    = waitStages.data();
     computeSubmitInfo.signalSemaphoreCount = 1;
     computeSubmitInfo.pSignalSemaphores    = &m_semaphores.vkComplete;
-    m_queue.submit(computeSubmitInfo, {});
+    m_queue.submit(computeSubmitInfo, m_fence);
+    m_queue.waitIdle();
   }
 };
