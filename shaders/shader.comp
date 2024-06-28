@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,7 +24,7 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0, rgba8) uniform image2D resultImage;
 
 
-layout(push_constant) uniform shaderInformation
+layout(push_constant) uniform PushConstants
 {
   float iTime;
 }
@@ -35,14 +35,15 @@ const vec2  center = vec2(0.5, 0.3);
 
 void main()
 {
-  uvec2 iResolution = gl_NumWorkGroups.xy * gl_WorkGroupSize.xy;
-  float iTime       = pushc.iTime;
-  vec2  fragCoord   = vec2(gl_GlobalInvocationID);
+  const ivec2 iResolution = imageSize(resultImage);
+  if(gl_GlobalInvocationID.x >= iResolution.x
+     || gl_GlobalInvocationID.y >= iResolution.y) return;
+  const vec2  fragCoord = vec2(gl_GlobalInvocationID);
+  const float iTime     = pushc.iTime;
   vec4  fragColor   = vec4(0);
 
-
   // Center
-  vec2 uv = fragCoord / vec2(iResolution.xy);
+  vec2 uv = fragCoord / vec2(iResolution);
   uv -= center;
   uv *= 5.0;
 

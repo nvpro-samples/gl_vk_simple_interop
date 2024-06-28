@@ -10,7 +10,6 @@ Message(STATUS "Processing Project ${PROJNAME}:")
 # this cannot be put anywhere else since we still didn't find setup.cmake yet
 #
 if(NOT BASE_DIRECTORY)
-
   find_path(BASE_DIRECTORY
     NAMES nvpro_core/cmake/setup.cmake
     PATHS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../.. 
@@ -62,16 +61,8 @@ source_group(GLSL_Files FILES ${GLSL_SOURCES})
 #####################################################################################
 # Executable
 #
-if(WIN32 AND NOT GLUT_FOUND)
-  add_definitions(/wd4996) #remove printf warning
-  add_definitions(/wd4244) #remove double to float conversion warning
-  add_definitions(/wd4305) #remove double to float truncation warning
-else()
-  add_definitions(-fpermissive)
-endif()
 add_executable(${EXENAME} ${SOURCE_FILES} ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES} ${GLSL_SOURCES})
-
-#_set_subsystem_console(${EXENAME})
+set_property(TARGET ${EXENAME} PROPERTY CXX_STANDARD 20)
 
 #####################################################################################
 # common source code needed for this sample
@@ -81,12 +72,6 @@ source_group(common FILES
   ${PACKAGE_SOURCE_FILES}
 )
 source_group("Source Files" FILES ${SOURCE_FILES})
-
-if(UNIX)
-  set(UNIXLINKLIBS dl pthread)
-else()
-  set(UNIXLINKLIBS)
-endif()
 
 #####################################################################################
 # Linkage
@@ -109,5 +94,3 @@ _finalize_target( ${EXENAME} )
 
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Release DESTINATION "bin_${ARCH}/${PROJNAME}/shaders")
 install(FILES ${SPV_OUTPUT} CONFIGURATIONS Debug DESTINATION "bin_${ARCH}_debug/${PROJNAME}/shaders")
-
-

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION
  * SPDX-License-Identifier: Apache-2.0
  */
 
 
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
+#include "nvvk/error_vk.hpp"
 #include "nvvk/resourceallocator_vk.hpp"
 #include <nvgl/extensions_gl.hpp>
 
@@ -31,7 +32,7 @@
 #include <unistd.h>
 #endif
 
-namespace nvvkpp {
+namespace nvvk {
 
 // #VKGL Extra for Interop
 struct BufferVkGL
@@ -68,8 +69,8 @@ struct Texture2DVkGL
 {
   nvvk::Texture texVk;
 
-  uint32_t     mipLevels{1};
-  vk::Extent2D imgSize{0, 0};
+  uint32_t   mipLevels{1};
+  VkExtent2D imgSize{0, 0};
 #ifdef WIN32
   HANDLE handle{nullptr};  // The Win32 handle
 #else
@@ -91,7 +92,7 @@ struct Texture2DVkGL
       fd = -1;
     }
 #endif
-    glDeleteBuffers(1, &oglId);
+    glDeleteTextures(1, &oglId);
     glDeleteMemoryObjectsEXT(1, &memoryObject);
   }
 };
@@ -99,14 +100,21 @@ struct Texture2DVkGL
 // Get the Vulkan buffer and create the OpenGL equivalent using the memory allocated in Vulkan
 inline void createBufferGL(nvvk::ResourceAllocator& alloc, BufferVkGL& bufGl)
 {
-  vk::Device                  device = alloc.getDevice();
+  VkDevice                    device = alloc.getDevice();
   nvvk::MemAllocator::MemInfo info   = alloc.getMemoryAllocator()->getMemoryInfo(bufGl.bufVk.memHandle);
 #ifdef WIN32
-  bufGl.handle = device.getMemoryWin32HandleKHR({info.memory, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32});
+  VkMemoryGetWin32HandleInfoKHR getInfo = {.sType      = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
+                                           .memory     = info.memory,
+                                           .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR};
+  NVVK_CHECK(vkGetMemoryWin32HandleKHR(device, &getInfo, &bufGl.handle));
 #else
-  bufGl.fd = device.getMemoryFdKHR({info.memory, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd});
+  VkMemoryGetFdInfoKHR getInfo = {.sType      = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
+                                  .memory     = info.memory,
+                                  .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR};
+  NVVK_CHECK(vkGetMemoryFdKHR(device, &getInfo, &bufGl.fd));
 #endif
-  auto req = device.getBufferMemoryRequirements(bufGl.bufVk.buffer);
+  VkMemoryRequirements req{};
+  vkGetBufferMemoryRequirements(device, bufGl.bufVk.buffer, &req);
 
   glCreateBuffers(1, &bufGl.oglId);
   glCreateMemoryObjectsEXT(1, &bufGl.memoryObject);
@@ -123,14 +131,21 @@ inline void createBufferGL(nvvk::ResourceAllocator& alloc, BufferVkGL& bufGl)
 // Get the Vulkan texture and create the OpenGL equivalent using the memory allocated in Vulkan
 inline void createTextureGL(nvvk::ResourceAllocator& alloc, Texture2DVkGL& texGl, int format, int minFilter, int magFilter, int wrap)
 {
-  vk::Device                  device = alloc.getDevice();
+  VkDevice                    device = alloc.getDevice();
   nvvk::MemAllocator::MemInfo info   = alloc.getMemoryAllocator()->getMemoryInfo(texGl.texVk.memHandle);
 #ifdef WIN32
-  texGl.handle = device.getMemoryWin32HandleKHR({info.memory, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32});
+  VkMemoryGetWin32HandleInfoKHR getInfo = {.sType      = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
+                                           .memory     = info.memory,
+                                           .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR};
+  NVVK_CHECK(vkGetMemoryWin32HandleKHR(device, &getInfo, &texGl.handle));
 #else
-  texGl.fd = device.getMemoryFdKHR({info.memory, vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd});
+  VkMemoryGetFdInfoKHR getInfo = {.sType      = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
+                                  .memory     = info.memory,
+                                  .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR};
+  NVVK_CHECK(vkGetMemoryFdKHR(device, &getInfo, &texGl.fd));
 #endif
-  auto req = device.getImageMemoryRequirements(texGl.texVk.image);
+  VkMemoryRequirements req{};
+  vkGetImageMemoryRequirements(device, texGl.texVk.image, &req);
 
   // Create a 'memory object' in OpenGL, and associate it with the memory allocated in Vulkan
   glCreateMemoryObjectsEXT(1, &texGl.memoryObject);
@@ -151,4 +166,4 @@ inline void createTextureGL(nvvk::ResourceAllocator& alloc, Texture2DVkGL& texGl
 }
 
 
-}  // namespace nvvkpp
+}  // namespace nvvk
