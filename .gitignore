@@ -1,2 +1,5 @@
 shaders/*.spv
-build/*
+build/
+_autogen/
+_bin/
+

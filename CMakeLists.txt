@@ -1,96 +1,60 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.22)
 
-get_filename_component(PROJNAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-Project(${PROJNAME})
-Message(STATUS "-------------------------------")
-Message(STATUS "Processing Project ${PROJNAME}:")
+# Get the name of the current directory
+get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
-#####################################################################################
-# look for nvpro_core 1) as a sub-folder 2) at some other locations
-# this cannot be put anywhere else since we still didn't find setup.cmake yet
-#
-if(NOT BASE_DIRECTORY)
-  find_path(BASE_DIRECTORY
-    NAMES nvpro_core/cmake/setup.cmake
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../.. 
-    REQUIRED
-    DOC "Directory containing nvpro_core"
-    )
-endif()
-if(EXISTS ${BASE_DIRECTORY}/nvpro_core/cmake/setup.cmake)
-  include(${BASE_DIRECTORY}/nvpro_core/cmake/setup.cmake)
-else()
-  message(FATAL_ERROR "could not find base directory, please set BASE_DIRECTORY to folder containing nvpro_core")
-endif()
-    
-_add_project_definitions(${PROJNAME})
+#-------------------------------------------------------------------------------
+project(${PROJECT_NAME} LANGUAGES CXX)
 
-#####################################################################################
-# additions from packages needed for this sample
-# add refs  in LIBRARIES_OPTIMIZED
-# add refs  in LIBRARIES_DEBUG
-# add files in PACKAGE_SOURCE_FILES
-
-set( EXENAME ${PROJNAME} )
-_add_package_OpenGL()
-_add_package_VulkanSDK()
-_add_package_IMGUI()
+# Turn off libraries we don't need
+option(NVPRO2_ENABLE_nvaftermath off)
+option(NVPRO2_ENABLE_nvapp off)
+option(NVPRO2_ENABLE_nvgpu_monitor off)
+option(NVPRO2_ENABLE_nvgui off)
+option(NVPRO2_ENABLE_nvimageformats off)
+option(NVPRO2_ENABLE_nvshaders_host off)
+option(NVPRO2_ENABLE_nvslang off)
+option(NVPRO2_ENABLE_nvvkgltf off)
 
 
-#####################################################################################
-# process the rest of some cmake code that needs to be done *after* the packages add
-_add_nvpro_core_lib()
 
-#####################################################################################
-# Source files for this project
-#
-file(GLOB SOURCE_FILES *.cpp *.hpp *.inl *.h *.c)
-file(GLOB GLSL_FILES *.glsl)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+find_package(NvproCore2 REQUIRED)
+# Sources and headers/all_in_one/sample_gl_vk_interop/src/main.cpp
+file(GLOB CPP_SOURCES "*.cpp" "*.h" "*.hpp")
+source_group("Source" FILES ${CPP_SOURCES})
 
-#####################################################################################
-# GLSL to SPIR-V custom build
-#
-#more than one file can be given: _compile_GLSL("GLSL_mesh.vert;GLSL_mesh.frag" "GLSL_mesh.spv" GLSL_SOURCES)
-# the SpirV validator is fine as long as files are for different pipeline stages (entry points still need to be main())
-#_compile_GLSL(<source(s)> <target spv> <LIST where files are appended>)
-UNSET(GLSL_SOURCES)
-UNSET(SPV_OUTPUT)
-_compile_GLSL("shaders/shader.comp" "shaders/shader.comp.spv" GLSL_SOURCES SPV_OUTPUT)
-source_group(GLSL_Files FILES ${GLSL_SOURCES})
+# Compile shaders
+file(GLOB SHADER_FILES "shaders/*.glsl")
 
-#####################################################################################
-# Executable
-#
-add_executable(${EXENAME} ${SOURCE_FILES} ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES} ${GLSL_SOURCES})
-set_property(TARGET ${EXENAME} PROPERTY CXX_STANDARD 20)
+set(SHADER_OUTPUT_DIR "${CMAKE_CURRENT_LIST_DIR}/_autogen")
 
-#####################################################################################
-# common source code needed for this sample
-#
-source_group(common FILES 
-  ${COMMON_SOURCE_FILES}
-  ${PACKAGE_SOURCE_FILES}
+compile_glsl(
+   "${SHADER_FILES}"
+   "${SHADER_OUTPUT_DIR}"
+   GENERATED_SHADER_GLSL_HEADERS
+   EXTRA_FLAGS "-I${NVSHADERS_DIR} -I${COMMON_DIR}"
+ )
+
+
+# Add shader files to the project
+source_group("Shaders" FILES ${SHADER_FILES})
+source_group("Shaders/Compiled" FILES ${GENERATED_SHADER_GLSL_HEADERS})
+
+add_executable(${PROJECT_NAME} ${CPP_SOURCES})
+
+target_sources(${PROJECT_NAME} PRIVATE ${SHADER_FILES} ${GENERATED_SHADER_GLSL_HEADERS})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+  nvpro2::nvutils
+  nvpro2::nvvk
+  nvpro2::nvgl
+  nvpro2::nvvkglsl
 )
-source_group("Source Files" FILES ${SOURCE_FILES})
 
-#####################################################################################
-# Linkage
-#
-target_link_libraries(${EXENAME} ${PLATFORM_LIBRARIES} nvpro_core)
+add_project_definitions(${PROJECT_NAME})
 
-foreach(DEBUGLIB ${LIBRARIES_DEBUG})
-  target_link_libraries(${EXENAME} debug ${DEBUGLIB})
-endforeach(DEBUGLIB)
-
-foreach(RELEASELIB ${LIBRARIES_OPTIMIZED})
-  target_link_libraries(${EXENAME} optimized ${RELEASELIB})
-endforeach(RELEASELIB)
-
-#####################################################################################
-# copies binaries that need to be put next to the exe files (ZLib, etc.)
-#
-
-_finalize_target( ${EXENAME} )
-
-install(FILES ${SPV_OUTPUT} CONFIGURATIONS Release DESTINATION "bin_${ARCH}/${PROJNAME}/shaders")
-install(FILES ${SPV_OUTPUT} CONFIGURATIONS Debug DESTINATION "bin_${ARCH}_debug/${PROJNAME}/shaders")
+copy_to_runtime_and_install(${PROJECT_NAME}
+  LOCAL_DIRS "${CMAKE_CURRENT_LIST_DIR}/shaders"
+  AUTO
+)

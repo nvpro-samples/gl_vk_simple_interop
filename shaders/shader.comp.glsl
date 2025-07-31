@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -36,11 +36,11 @@ const vec2  center = vec2(0.5, 0.3);
 void main()
 {
   const ivec2 iResolution = imageSize(resultImage);
-  if(gl_GlobalInvocationID.x >= iResolution.x
-     || gl_GlobalInvocationID.y >= iResolution.y) return;
+  if(gl_GlobalInvocationID.x >= iResolution.x || gl_GlobalInvocationID.y >= iResolution.y)
+    return;
   const vec2  fragCoord = vec2(gl_GlobalInvocationID);
   const float iTime     = pushc.iTime;
-  vec4  fragColor   = vec4(0);
+  vec4        fragColor = vec4(0);
 
   // Center
   vec2 uv = fragCoord / vec2(iResolution);
