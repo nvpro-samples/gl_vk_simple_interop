@@ -172,10 +172,9 @@ public:
     NVVK_CHECK(vkCreatePipelineLayout(m_device, &layoutInfo, nullptr, &m_pipelineLayout));
 
     // Search paths for the shader files
-    std::filesystem::path exePath = nvutils::getExecutablePath().parent_path();
-    std::filesystem::path exeName = nvutils::getExecutablePath().stem();
-    const std::vector<std::filesystem::path> shaderPaths = {exePath / std::filesystem::path(PROJECT_EXE_TO_SOURCE_DIRECTORY) / "shaders",
-                                                            exePath / exeName / "shaders", exePath};
+    std::filesystem::path                    exePath     = nvutils::getExecutablePath().parent_path();
+    const std::vector<std::filesystem::path> shaderPaths = {exePath / TARGET_EXE_TO_SOURCE_DIRECTORY / "shaders",
+                                                            exePath / TARGET_NAME "_files" / "shaders", exePath};
 
     // Compile the GLSL compute shader to SPIR-V
     nvvkglsl::GlslCompiler glslCompiler;
