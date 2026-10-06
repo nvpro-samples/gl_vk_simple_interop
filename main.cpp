@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2023-2026, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.  All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -77,7 +77,7 @@ public:
     createBufferVK();  // Create the vertex buffer
 
     // Initialize the Vulkan compute shader
-    m_compute.setup(m_allocator, m_queueInfo.familyIndex);
+    m_compute.setup(m_allocator, m_queueInfo.familyIndex, vkContext.hasExtensionEnabled(VK_EXT_FRAME_BOUNDARY_EXTENSION_NAME));
     m_compute.update({1024, 1024});  // Initial size
   }
 
@@ -318,21 +318,23 @@ int main(int argc, char** argv)
   contextWindow.makeContextCurrent();
   contextWindow.swapInterval(1);
 
-  nvvk::ContextInitInfo vkSetup{.instanceExtensions = {VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-                                                       VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
-                                                       VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
-                                .deviceExtensions   = {{VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME},
-                                                       {VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME},
+  VkPhysicalDeviceFrameBoundaryFeaturesEXT deviceFrameBoundary{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT};
+  nvvk::ContextInitInfo vkSetup{
+      .instanceExtensions = {VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+                             VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
+      .deviceExtensions   = {{VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME},
+                             {VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME},
+                             {.extensionName = VK_EXT_FRAME_BOUNDARY_EXTENSION_NAME, .feature = &deviceFrameBoundary, .required = false},
 #ifdef WIN32
-                                                     {VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME},
-                                                     {VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME}
+                           {VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME},
+                           {VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME}
 #else
-                                                     {VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME},
-                                                     {VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME}
+                           {VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME},
+                           {VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME}
 #endif
-                                },
-                                .queues = {VK_QUEUE_GRAPHICS_BIT}};
-  vkSetup.enableValidationLayers = true;
+      },
+      .queues                 = {VK_QUEUE_GRAPHICS_BIT},
+      .enableValidationLayers = true};
 
   // Creating the Vulkan instance and device
   nvvk::Context vkContext;

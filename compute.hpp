@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2023-2026, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.  All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -42,12 +42,14 @@ class ComputeImageVk
 {
 public:
   ComputeImageVk() = default;
-  void setup(nvvk::ResourceAllocatorExport& allocator, uint32_t queueIdxGraphic)
+  void setup(nvvk::ResourceAllocatorExport& allocator, uint32_t queueIdxGraphic, bool hasExtFrameBoundary)
   {
     m_allocator       = &allocator;
     m_device          = m_allocator->getDevice();
     m_physicalDevice  = m_allocator->getPhysicalDevice();
     m_queueIdxGraphic = queueIdxGraphic;
+    m_hasExtFrameBoundary = hasExtFrameBoundary;
+
 
     VkPipelineCacheCreateInfo pipelineCacheInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
     NVVK_CHECK(vkCreatePipelineCache(m_device, &pipelineCacheInfo, nullptr, &m_pipelineCache));
@@ -296,6 +298,11 @@ public:
                                    .pCommandBuffers      = &m_commandBuffer,
                                    .signalSemaphoreCount = 1,
                                    .pSignalSemaphores    = &m_semaphores.vkComplete};
+    VkFrameBoundaryEXT frameBoundaryExt{.sType = VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT, .flags = VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT};
+    if(m_hasExtFrameBoundary)
+    {
+      computeSubmitInfo.pNext = &frameBoundaryExt;
+    }
     NVVK_CHECK(vkQueueSubmit(m_queue, 1, &computeSubmitInfo, m_fence));
     NVVK_CHECK(vkQueueWaitIdle(m_queue));
   }
@@ -308,6 +315,7 @@ private:
   nvvk::ResourceAllocatorExport* m_allocator{};    // Resource allocator to create Vulkan resources
   nvvk::SemaphoresVkGL           m_semaphores{};   // Semaphores for synchronization between OpenGL and Vulkan
   nvvk::Texture2DVkGL            m_textureTarget;  // Texture target for the compute shader output
+  bool                           m_hasExtFrameBoundary;
 
   VkDevice         m_device{};          // Vulkan device
   VkPhysicalDevice m_physicalDevice{};  // Vulkan physical device, used to get information about the device capabilities
